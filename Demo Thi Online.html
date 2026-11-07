@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Demo Thi Online</title>
+<style>
+:root{--bg:#f3f4f7;--card:#fff;--tx:#161a26;--mu:#657089;--ac:#2b44ff;--on:#fff;--ok:#12904f;--no:#d12f2f;--bd:#dde1ea;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1118;--card:#171b26;--tx:#e9ecf5;--mu:#97a0b8;--ac:#ffd24a;--on:#16181f;--ok:#3ddc97;--no:#ff7a7a;--bd:#272d3d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1118;--card:#171b26;--tx:#e9ecf5;--mu:#97a0b8;--ac:#ffd24a;--on:#16181f;--ok:#3ddc97;--no:#ff7a7a;--bd:#272d3d;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--card);z-index:10}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:11;display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--card);border-bottom:1px solid var(--bd)}
+.sp{flex:1}#clock{font-weight:700;font-variant-numeric:tabular-nums}
+main{max-width:720px;margin:auto;padding:12px 12px 80px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+h2{margin:0 0 6px;font-size:22px}
+button{font:inherit;color:inherit;cursor:pointer}
+.btn{background:var(--ac);color:var(--on);border:0;border-radius:10px;padding:12px 16px;min-height:46px;margin:4px 6px 4px 0;font-weight:600}
+.btn.s{background:transparent;color:var(--tx);border:1px solid var(--bd);font-weight:400}
+.ic{background:none;border:1px solid var(--bd);border-radius:8px;padding:6px 10px}
+input,textarea{width:100%;font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px;margin:4px 0 8px}
+textarea{min-height:64px;resize:vertical}
+.mu{color:var(--mu);font-size:14px}.err{color:var(--no)}
+.opt{display:block;width:100%;text-align:left;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:12px;margin:6px 0;min-height:48px}
+.opt.sel{border-color:var(--ac);box-shadow:inset 0 0 0 1px var(--ac)}
+.opt.ok{border-color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
+.opt.no{border-color:var(--no);box-shadow:inset 0 0 0 1px var(--no)}
+.orow{display:flex;gap:8px;align-items:center}.orow input{margin:4px 0}
+.mk{flex:none;width:44px;height:44px;border-radius:10px;border:1px solid var(--bd);background:var(--bg)}
+.mk.on{background:var(--ok);color:#fff;border-color:var(--ok)}
+.hd{display:flex;justify-content:space-between;align-items:center;font-weight:600;margin-bottom:6px}
+.x{background:none;border:0;color:var(--no)}
+.grid{display:flex;flex-wrap:wrap;gap:6px}
+.grid button{width:40px;height:40px;border-radius:8px;border:1px solid var(--bd);background:var(--bg)}
+.grid .dn{background:var(--ac);color:var(--on);border-color:var(--ac);font-weight:600}
+.q{scroll-margin-top:80px}
+.qt{margin:6px 0;font-weight:600}
+.pas{border-left:3px solid var(--ac);background:var(--bg);border-radius:0 10px 10px 0;padding:6px 12px;margin:8px 0}
+.pas p{margin:8px 0}
+.tfr{display:flex;gap:8px;align-items:center;margin:8px 0}.tfr span{flex:1}
+.tfr .opt{width:72px;margin:0;text-align:center;min-height:44px;padding:8px}
+.big{font-size:40px;font-weight:700;line-height:1.2}
+</style></head><body><div id="app"></div>
+<script>
+const $=s=>document.querySelector(s);
+const LS={g(k){try{return localStorage.getItem(k)}catch(e){return null}},s(k,v){try{localStorage.setItem(k,v)}catch(e){}},d(k){try{localStorage.removeItem(k)}catch(e){}}};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const b64e=u=>{let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')};
+const b64d=c=>{c=c.trim().replace(/\s+/g,'').replace(/-/g,'+').replace(/_/g,'/');return Uint8Array.from(atob(c+'='.repeat((4-c.length%4)%4)),x=>x.charCodeAt(0))};
+const pack=o=>JSON.stringify([o.title,o.time,o.qs.map(q=>q.t=='mc'?[0,q.q,q.o,q.a]:[1,q.q,q.s,q.a.reduce((n,v,j)=>n|(v?1<<j:0),0)])]);
+const unpack=s=>{const [title,time,qs]=JSON.parse(s);return{title,time,qs:qs.map(x=>x[0]==0?{t:'mc',q:x[1],o:x[2],a:x[3]}:{t:'tf',q:x[1],s:x[2],a:[0,1,2,3].map(j=>!!(x[3]>>j&1))})}};
+const toCJK=u=>{let acc=0,n=0,s='';for(const b of u){acc=(acc<<8)|b;n+=8;while(n>=14){n-=14;s+=String.fromCharCode(0x4E00+((acc>>n)&16383))}acc&=(1<<n)-1}acc=(acc<<1)|1;n+=1;acc<<=(14-n);return s+String.fromCharCode(0x4E00+acc)};
+const fromCJK=s=>{let bits='';for(const ch of s)bits+=(ch.charCodeAt(0)-0x4E00).toString(2).padStart(14,'0');bits=bits.slice(0,bits.lastIndexOf('1'));const u=new Uint8Array(bits.length>>3);for(let i=0;i<u.length;i++)u[i]=parseInt(bits.substr(i*8,8),2);return u};
+const enc=async o=>{let u=new TextEncoder().encode(pack(o)),m=0;if(typeof CompressionStream!='undefined'){u=new Uint8Array(await new Response(new Blob([u]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer());m=1}const w=new Uint8Array(u.length+1);w[0]=m;w.set(u,1);return toCJK(w)};
+const dec=async c=>{c=c.replace(/\s+/g,'');if(/^[\u4e00-\u9fff]/.test(c)){const w=fromCJK(c);let u=w.subarray(1);if(w[0])u=new Uint8Array(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());return unpack(new TextDecoder().decode(u))}const u=b64d(c);try{const ds=new Blob([u]).stream().pipeThrough(new DecompressionStream('deflate-raw'));return JSON.parse(await new Response(ds).text())}catch(x){return JSON.parse(new TextDecoder().decode(u))}};
+const f=x=>(Math.round(x*100)/100).toString().replace('.',',');
+const MC=0.25,TF=[0,0.1,0.25,0.5,1];
+const SAMPLE={title:'Đề mẫu',time:10,qs:[
+{t:'mc',q:'Nguyên tử có 11 proton và 12 neutron. Số khối là?',o:['11','12','23','1'],a:2},
+{t:'mc',q:'Ion Na⁺ có bao nhiêu electron?',o:['10','11','12','9'],a:0},
+{t:'mc',q:'Giá trị của 2² + 3² là?',o:['13','25','10','12'],a:0},
+{t:'tf',q:'Xét nguyên tử Cl (Z = 17):',s:['Nguyên tử Cl có 17 electron','Nguyên tử Cl có 18 proton','Ion Cl⁻ có 18 electron','Ion Cl⁻ có 16 proton'],a:[true,false,true,false]}]};
+let mode='home',ex=null,ans=[],endAt=0,name='',draft={title:'',time:15,qs:[]},codeOut='',err='',ask=false,pasteTxt='',note='',noteBad=false;
+
+function hdr(){return `<header><b>Demo Thi Online</b><span class=sp></span>${mode=='take'?'<span id=clock></span>':''}<button class=ic data-a=theme>Sáng/Tối</button>${mode!='home'&&mode!='take'?'<button class=ic data-a=homeb>Trang chủ</button>':''}</header>`}
+function home(){const p=LS.g('prog');return `<div class=card><h2>Tạo đề, gửi mã, chấm tự động</h2><p class=mu>Hai dạng câu: trắc nghiệm 4 đáp án và đúng/sai 4 ý.</p><button class=btn data-a=create>Tạo đề mới</button><button class="btn s" data-a=join>Vào làm bài bằng mã đề</button><button class="btn s" data-a=sample>Làm thử đề mẫu</button>${p?'<button class="btn s" data-a=resume>Tiếp tục bài đang làm</button>':''}</div>`}
+function joinV(){return `<div class=card><h2>Vào làm bài</h2><label>Mã đề</label><textarea id=jc placeholder="Dán mã đề vào đây"></textarea><label>Tên của bạn</label><input id=jn><p class="err">${esc(err)}</p><button class=btn data-a=begin>Bắt đầu làm</button></div>`}
+function qEdit(q,i){const tf=q.t=='tf';return `<div class=card><div class=hd><span>Câu ${i+1} · ${tf?'Đúng/Sai':'Trắc nghiệm'}</span><button class=x data-a=del data-i=${i}>Xóa</button></div><textarea data-i=${i} data-f=q placeholder="Nội dung câu hỏi">${esc(q.q)}</textarea>`+(tf?q.s.map((s,j)=>`<div class=orow><button class="mk ${q.a[j]?'on':''}" data-a=setc data-i=${i} data-j=${j}>${q.a[j]?'Đ':'S'}</button><input data-i=${i} data-f=s data-j=${j} value="${esc(s)}" placeholder="Ý ${'abcd'[j]}"></div>`).join('')+'<p class=mu>Bấm nút bên trái để đổi Đúng (Đ) hoặc Sai (S)</p>':q.o.map((o,j)=>`<div class=orow><button class="mk ${q.a===j?'on':''}" data-a=setc data-i=${i} data-j=${j}>${'ABCD'[j]}</button><input data-i=${i} data-f=o data-j=${j} value="${esc(o)}" placeholder="Đáp án ${'ABCD'[j]}"></div>`).join('')+'<p class=mu>Bấm chữ cái để chọn đáp án đúng</p>')+'</div>'}
+function pasteCard(){return `<div class=card><div class=hd>Dán cả đề vào đây</div><textarea id=paste style="min-height:150px" placeholder="Câu 1. Số khối của nguyên tử bằng?&#10;A. Số p&#10;*B. Số p + số n&#10;C. Số e&#10;D. Số n&#10;Câu 2. Cho nguyên tử Cl:&#10;*a) Có 17 electron&#10;b) Có 18 proton&#10;*c) Cl⁻ có 18 electron&#10;d) Cl⁻ có 16 proton">${esc(pasteTxt)}</textarea><p class=mu>Mỗi câu bắt đầu bằng Câu 1., Câu 2. ... Trắc nghiệm dùng A. B. C. D., đúng/sai dùng a) b) c) d). Đáp án đúng: đặt dấu * trước đáp án (hoặc trước ý đúng), hoặc ghi dòng Đáp án: B / Đáp án: ĐSĐS, hoặc cuối đề xuống dòng ghi HẾT rồi liệt kê đáp án từng câu: 1A, 2B, 3C... (đúng/sai: 4ĐSĐS).</p>${note?`<p class="${noteBad?'err':'mu'}">${esc(note)}</p>`:''}<button class=btn data-a=parse>Tách câu hỏi</button></div>`}
+function createV(){return `<div class=card><label>Tên đề</label><input data-k=title value="${esc(draft.title)}"><label>Thời gian (phút)</label><input type=number min=1 data-k=time value="${draft.time}"></div>`+pasteCard()+draft.qs.map(qEdit).join('')+`<div class=card><button class="btn s" data-a=addmc>+ Trắc nghiệm</button><button class="btn s" data-a=addtf>+ Đúng/Sai</button></div><div class=card><p class=mu>Điểm: trắc nghiệm 0,25/câu. Đúng/sai chấm theo thang THPT: đúng 1 ý 0,1; 2 ý 0,25; 3 ý 0,5; 4 ý 1,0.</p><p class=err>${esc(err)}</p><button class=btn data-a=gen>Tạo mã đề</button><button class="btn s" data-a=trydraft>Làm thử</button>${codeOut?`<textarea id=code readonly>${codeOut}</textarea><button class=btn data-a=copy>Sao chép mã</button><p class=mu>Gửi mã này cho người làm bài, họ dán vào mục Vào làm bài.</p>`:''}</div>`}
+function stemH(s){const L=s.split('\n');if(L.length<2)return `<p class=qt>${esc(s)}</p>`;let last='';if(L.length>2&&/[?:]\s*$/.test(L[L.length-1]))last=L.pop();return `<p class=qt>${esc(L[0])}</p><div class=pas>${L.slice(1).map(x=>`<p>${esc(x)}</p>`).join('')}</div>`+(last?`<p class=qt>${esc(last)}</p>`:'')}
+const done=i=>ex.qs[i].t=='mc'?ans[i]!==null:ans[i].every(v=>v!==null);
+function takeV(){const n=ex.qs.length,c=ex.qs.filter((_,i)=>done(i)).length;return `<div class=card><b>${esc(ex.title)}</b><div class=mu>${esc(name)} · đã làm ${c}/${n} câu</div><div class=grid>${ex.qs.map((_,i)=>`<button class="${done(i)?'dn':''}" data-a=jump data-i=${i}>${i+1}</button>`).join('')}</div></div>`+ex.qs.map((q,i)=>`<div class="card q" id=q${i}><div class=hd>Câu ${i+1}</div>${stemH(q.q)}`+(q.t=='mc'?q.o.map((o,j)=>`<button class="opt ${ans[i]===j?'sel':''}" data-a=pick data-i=${i} data-j=${j}><b>${'ABCD'[j]}.</b> ${esc(o)}</button>`).join(''):q.s.map((s,j)=>`<div class=tfr><span>${'abcd'[j]}) ${esc(s)}</span>${[1,0].map(v=>`<button class="opt ${ans[i][j]===!!v?'sel':''}" data-a=tfp data-i=${i} data-j=${j} data-v=${v}>${v?'Đúng':'Sai'}</button>`).join('')}</div>`).join(''))+'</div>').join('')+`<button class=btn data-a=submit>${ask?`Còn ${n-c} câu chưa làm. Bấm lại để nộp`:'Nộp bài'}</button>`}
+function grade(){let sc=0,max=0;const det=ex.qs.map((q,i)=>{if(q.t=='mc'){max+=MC;const ok=ans[i]===q.a;if(ok)sc+=MC;return ok?MC:0}let n=0;q.a.forEach((v,j)=>{if(ans[i][j]===v)n++});max+=1;sc+=TF[n];return TF[n]});return{sc,max,det}}
+function resV(){const g=grade();return `<div class=card><div class=mu>${esc(ex.title)} · ${esc(name)}</div><div class=big>${f(g.sc)}/${f(g.max)}</div><div class=mu>Quy ra thang 10: ${f(g.sc/g.max*10)}</div><button class=btn data-a=again>Làm lại</button><button class="btn s" data-a=homeb>Trang chủ</button></div>`+ex.qs.map((q,i)=>`<div class=card><div class=hd><span>Câu ${i+1}</span><span>${f(g.det[i])}/${f(q.t=='mc'?MC:1)}</span></div>${stemH(q.q)}`+(q.t=='mc'?q.o.map((o,j)=>`<div class="opt ${j==q.a?'ok':j==ans[i]?'no':''}"><b>${'ABCD'[j]}.</b> ${esc(o)}</div>`).join(''):q.s.map((s,j)=>{const m=ans[i][j],r=q.a[j],L=v=>v===null?'bỏ trống':v?'Đúng':'Sai';return `<div class="opt ${m===r?'ok':'no'}">${'abcd'[j]}) ${esc(s)}<div class=mu>Bạn chọn: ${L(m)} · Đáp án: ${L(r)}</div></div>`}).join(''))+'</div>').join('')}
+function render(keep){const y=keep?scrollY:0;$('#app').innerHTML=hdr()+'<main>'+({home,join:joinV,create:createV,take:takeV,res:resV}[mode])()+'</main>';scrollTo(0,y);tick()}
+function tick(){const c=$('#clock');if(!c||mode!='take')return;const l=Math.max(0,endAt-Date.now()),s=Math.ceil(l/1000);c.textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');if(l<=0)submit()}
+setInterval(tick,1000);
+function opts(b,L){let pos=0,m=[];for(const c of L){const re=new RegExp('(^|\\s)(\\*?)'+c+'\\s*[.)]\\s*','g');re.lastIndex=pos;const r=re.exec(b);if(!r)return null;m.push({s:r.index+r[1].length,e:re.lastIndex,star:!!r[2]});pos=re.lastIndex}return{stem:b.slice(0,m[0].s),items:m.map((x,k)=>({t:b.slice(x.e,k<3?m[k+1].s:b.length).replace(/\s+/g,' ').trim(),star:x.star}))}}
+function parseExam(txt,base){txt=txt.replace(/\r/g,'').trim();const key={},qs=[],miss=[],bad=[];
+const km=txt.match(/\n[ \t]*(?:HẾT|(?:bảng[ \t]*)?đáp[ \t]*án[ \t]*:?)[ \t]*\.?[ \t]*(?=\n|$)/i);
+if(km){for(const m of txt.slice(km.index+km[0].length).matchAll(/(\d+)\s*[-.:)]?\s*([A-D]|[ĐđSs]{4})(?![A-Za-zĐđ])/gi))key[+m[1]]=m[2];txt=txt.slice(0,km.index)}
+const sp=/\n(?=[ \t]*Câu\s*\d+)/i.test('\n'+txt)?/\n(?=[ \t]*Câu\s*\d+)/i:/\n(?=[ \t]*\d+\s*[.)]\s)/;
+for(const b0 of('\n'+txt).split(sp)){const m=b0.match(/^\s*(?:Câu|Question)?\s*(\d+)\s*[.:)]?\s*/i);if(!m)continue;const n=+m[1];let ansl='',b=b0.slice(m[0].length);
+b=b.replace(/^[ \t]*(?:lời giải|giải thích|hướng dẫn)[\s\S]*$/im,'').replace(/^[ \t]*(?:đáp\s*án|đa|answer|key)[ \t]*[:\-.][ \t]*(.+)$/im,(_,x)=>{ansl=x;return''});
+let o=opts(b,['A','B','C','D']),tf=false;if(!o){o=opts(b,['a','b','c','d']);tf=!!o}
+if(!o){bad.push(n);continue}
+const q=o.stem.replace(/[ \t]+/g,' ').replace(/\s*\n\s*/g,'\n').trim(),pos=base+qs.length+1;
+if(!tf){let a=o.items.findIndex(x=>x.star);if(a<0){const L=(ansl.match(/\b([A-D])\b/i)||[])[1]||(/^[A-D]$/i.test(key[n]||'')?key[n]:'');if(L)a='ABCD'.indexOf(L.toUpperCase())}if(a<0)miss.push(pos);qs.push({t:'mc',q,o:o.items.map(x=>x.t),a})}
+else{let a=o.items.map(x=>x.star);if(!a.some(Boolean)){const s=(ansl||key[n]||'').trim(),v=s.replace(/[a-d]\s*[-:.)=]/gi,'').replace(/đúng/gi,'Đ').replace(/sai/gi,'S').replace(/[^ĐđSs]/g,'');if(v.length==4)a=[...v].map(c=>/[Đđ]/.test(c));else if(/^[a-d]([\s,;]+[a-d])*$/i.test(s))a=['a','b','c','d'].map(c=>s.toLowerCase().includes(c));else miss.push(pos)}qs.push({t:'tf',q,s:o.items.map(x=>x.t),a})}}
+return{qs,miss,bad}}
+const sv=()=>LS.s('prog',JSON.stringify({ex,name,ans,endAt}));
+function start(e,n){ex=e;name=n||'Học sinh';ans=ex.qs.map(q=>q.t=='mc'?null:[null,null,null,null]);endAt=Date.now()+ex.time*60000;mode='take';ask=false;sv();render()}
+function submit(){mode='res';ask=false;LS.d('prog');render()}
+document.addEventListener('input',e=>{const t=e.target,d=t.dataset;if(t.id=='paste'){pasteTxt=t.value;return}if(d.k){draft[d.k]=d.k=='time'?(+t.value||1):t.value;return}if(d.f){const q=draft.qs[+d.i];if(d.f=='q')q.q=t.value;else if(d.f=='o')q.o[+d.j]=t.value;else q.s[+d.j]=t.value}});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const d=b.dataset,i=+d.i,j=+d.j;err='';switch(d.a){
+case'theme':{const t=document.documentElement.dataset.theme=='dark'?'light':'dark';document.documentElement.dataset.theme=t;LS.s('theme',t);break}
+case'homeb':mode='home';render();break;
+case'create':mode='create';if(!draft.qs.length)draft.qs.push({t:'mc',q:'',o:['','','',''],a:0});render();break;
+case'addmc':draft.qs.push({t:'mc',q:'',o:['','','',''],a:0});codeOut='';render(1);break;
+case'addtf':draft.qs.push({t:'tf',q:'',s:['','','',''],a:[true,true,true,true]});codeOut='';render(1);break;
+case'del':draft.qs.splice(i,1);codeOut='';render(1);break;
+case'setc':{const q=draft.qs[i];if(q.t=='mc')q.a=j;else q.a[j]=!q.a[j];codeOut='';render(1);break}
+case'gen':case'trydraft':{if(!draft.qs.length){err='Chưa có câu hỏi nào.';render(1);break}
+const bad=draft.qs.findIndex(q=>!q.q.trim()||(q.t=='mc'?q.o:q.s).some(x=>!x.trim())||(q.t=='mc'&&q.a<0));
+if(bad>=0){err='Câu '+(bad+1)+' chưa điền đủ nội dung hoặc chưa chọn đáp án đúng.';render(1);break}
+const e2={title:draft.title.trim()||'Đề không tên',time:draft.time,qs:draft.qs};
+if(d.a=='gen'){enc(e2).then(c=>{codeOut=c;render(1)})}else start(JSON.parse(JSON.stringify(e2)),'Bạn');break}
+case'parse':{draft.qs=draft.qs.filter(q=>q.q.trim()||(q.t=='mc'?q.o:q.s).some(x=>x.trim()));const r=parseExam(pasteTxt,draft.qs.length);
+if(!r.qs.length){note='Không tách được câu nào. Kiểm tra mỗi câu có "Câu 1." và đáp án A. B. C. D. (hoặc a) b) c) d)).';noteBad=true}
+else{draft.qs.push(...r.qs);pasteTxt='';codeOut='';noteBad=r.miss.length+r.bad.length>0;note='Đã thêm '+r.qs.length+' câu.'+(r.miss.length?' Chưa thấy đáp án đúng ở câu: '+r.miss.join(', ')+'. Kéo xuống chọn lại.':'')+(r.bad.length?' Không đọc được câu số: '+r.bad.join(', ')+' trong đề dán.':'')}
+render(1);break}
+case'copy':{const t=$('#code');t.select();try{navigator.clipboard.writeText(t.value)}catch(x){}b.textContent='Đã sao chép';break}
+case'join':mode='join';render();break;
+case'begin':{const nm=$('#jn').value.trim();dec($('#jc').value).then(e2=>{if(!e2.qs||!e2.qs.length)throw 0;start(e2,nm)}).catch(x=>{err='Mã đề không đúng. Copy lại đủ cả mã nhé.';render(1)});break}
+case'sample':start(JSON.parse(JSON.stringify(SAMPLE)),'Học sinh');break;
+case'resume':{try{const p=JSON.parse(LS.g('prog'));ex=p.ex;name=p.name;ans=p.ans;endAt=p.endAt;mode='take';render()}catch(x){LS.d('prog');render()}break}
+case'jump':$('#q'+i).scrollIntoView({behavior:'smooth'});break;
+case'pick':ans[i]=j;sv();render(1);break;
+case'tfp':ans[i][j]=d.v=='1';sv();render(1);break;
+case'submit':if(!ask&&ex.qs.some((_,k)=>!done(k))){ask=true;render(1)}else submit();break;
+case'again':start(ex,name);break}});
+document.documentElement.dataset.theme=LS.g('theme')||'dark';
+render();
+</script></body></html>
