@@ -90,7 +90,33 @@ if(!tf){let a=o.items.findIndex(x=>x.star);if(a<0){const L=(ansl.match(/\b([A-D]
 else{let a=o.items.map(x=>x.star);if(!a.some(Boolean)){const s=(ansl||key[n]||'').trim(),v=s.replace(/[a-d]\s*[-:.)=]/gi,'').replace(/đúng/gi,'Đ').replace(/sai/gi,'S').replace(/[^ĐđSs]/g,'');if(v.length==4)a=[...v].map(c=>/[Đđ]/.test(c));else if(/^[a-d]([\s,;]+[a-d])*$/i.test(s))a=['a','b','c','d'].map(c=>s.toLowerCase().includes(c));else miss.push(pos)}qs.push({t:'tf',q,s:o.items.map(x=>x.t),a})}}
 return{qs,miss,bad}}
 const sv=()=>LS.s('prog',JSON.stringify({ex,name,ans,endAt}));
-function start(e,n){ex=e;name=n||'Học sinh';ans=ex.qs.map(q=>q.t=='mc'?null:[null,null,null,null]);endAt=Date.now()+ex.time*60000;mode='take';ask=false;sv();render()}
+function shuffleArray(a){
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
+  return a
+}
+function shuffleExam(e){
+  // Tạo bản sao để không làm thay đổi đề gốc/mã đề.
+  const copy=JSON.parse(JSON.stringify(e));
+  for(const q of copy.qs){
+    if(q.t=='mc'){
+      // Xáo trộn lựa chọn và cập nhật vị trí đáp án đúng.
+      const opts=q.o.map((text,i)=>({text,correct:i===q.a}));
+      shuffleArray(opts);
+      q.o=opts.map(x=>x.text);
+      q.a=opts.findIndex(x=>x.correct);
+    }else{
+      // Xáo trộn từng ý đúng/sai cùng đáp án tương ứng.
+      const items=q.s.map((text,i)=>({text,correct:q.a[i]}));
+      shuffleArray(items);
+      q.s=items.map(x=>x.text);
+      q.a=items.map(x=>x.correct);
+    }
+  }
+  // Xáo trộn thứ tự câu hỏi sau khi đã xáo lựa chọn trong từng câu.
+  shuffleArray(copy.qs);
+  return copy;
+}
+function start(e,n){ex=shuffleExam(e);name=n||'Học sinh';ans=ex.qs.map(q=>q.t=='mc'?null:[null,null,null,null]);endAt=Date.now()+ex.time*60000;mode='take';ask=false;sv();render()}
 function submit(){mode='res';ask=false;LS.d('prog');render()}
 document.addEventListener('input',e=>{const t=e.target,d=t.dataset;if(t.id=='paste'){pasteTxt=t.value;return}if(d.k){draft[d.k]=d.k=='time'?(+t.value||1):t.value;return}if(d.f){const q=draft.qs[+d.i];if(d.f=='q')q.q=t.value;else if(d.f=='o')q.o[+d.j]=t.value;else q.s[+d.j]=t.value}});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const d=b.dataset,i=+d.i,j=+d.j;err='';switch(d.a){
